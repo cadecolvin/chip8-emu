@@ -33,6 +33,7 @@ impl Chip8 {
     pub fn execute_cycle(&mut self) {
         let opcode = self.read_word();
         self.process_opcode(opcode);
+        self.program_counter += 2;
     }
 
     fn read_word(&self) -> u16 {
@@ -164,9 +165,31 @@ impl Chip8 {
                 unimplemented!();
             },
             0xF => {
-                unimplemented!();
+                let secondary_map = (opcode & 0x00FF) as u8;
+                match secondary_map {
+                    0x07 => self.registers[x] = self.delay_timer,
+                    0x0A => unimplemented!(),
+                    0x15 => self.delay_timer = self.registers[x],
+                    0x18 => self.sound_timer = self.registers[x],
+                    0x1E => self.addr_register = self.addr_register.wrapping_add(self.registers[x] as u16),
+                    0x29 => unimplemented!(),
+                    0x33 => unimplemented!(),
+                    0x55 => {
+                        for i in 0..x {
+                            let memory_location = self.addr_register + i as u16;
+                            self.memory[memory_location as usize] = self.registers[i];
+                        }
+                    },
+                    0x65 => {
+                        for i in 0..x {
+                            let memory_location = self.addr_register + i as u16;
+                            self.registers[i] = self.memory[memory_location as usize];
+                        }
+                    },
+                    _ => (),
+                };
             },
-            _ => ()
-        }
+            _ => (),
+        };
     }
 }
